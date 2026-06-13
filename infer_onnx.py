@@ -42,11 +42,12 @@ def add_nvidia_dll_directories():
 
 
 class Preprocessing:
-    def __init__(self, max_time=72, time_step=6):
-        norm_file = np.load("./auxiliary/normalize.npz")
+    def __init__(self, max_time=72, time_step=6, auxiliary_path="auxiliary"):
+        auxiliary_path = Path(auxiliary_path)
+        norm_file = np.load(auxiliary_path / "normalize.npz")
         self.mean = norm_file["mean"].astype(np.float32)
         self.std = norm_file["std"].astype(np.float32)
-        self.constants = np.load("./auxiliary/constants.npy").astype(np.float32)
+        self.constants = np.load(auxiliary_path / "constants.npy").astype(np.float32)
         self.max_time = max_time
         self.time_step = time_step
 
@@ -74,8 +75,9 @@ class Preprocessing:
 
 
 class Postprocessing:
-    def __init__(self):
-        norm_file = np.load("./auxiliary/normalize.npz")
+    def __init__(self, auxiliary_path="auxiliary"):
+        auxiliary_path = Path(auxiliary_path)
+        norm_file = np.load(auxiliary_path / "normalize.npz")
         self.mean = norm_file["mean"].astype(np.float32)
         self.std = norm_file["std"].astype(np.float32)
 
@@ -208,8 +210,9 @@ def infer_one_case(
 def infer(work_path, start_time, max_time=72, time_step=6, gpu_id=0):
     work_path = Path(work_path)
     session = create_session(work_path / "NJU-Earth.onnx", gpu_id=gpu_id, use_cuda=True)
-    preprocessing = Preprocessing(max_time=max_time, time_step=time_step)
-    postprocessing = Postprocessing()
+    auxiliary_path = work_path / "auxiliary"
+    preprocessing = Preprocessing(max_time=max_time, time_step=time_step, auxiliary_path=auxiliary_path)
+    postprocessing = Postprocessing(auxiliary_path=auxiliary_path)
 
     infer_one_case(
         session=session,
@@ -255,8 +258,9 @@ def main():
     output_path = _path_from_workdir(work_path, args.output_path)
 
     session = create_session(onnx_model, gpu_id=args.gpu_id, use_cuda=not args.cpu)
-    preprocessing = Preprocessing(max_time=args.max_time, time_step=args.time_step)
-    postprocessing = Postprocessing()
+    auxiliary_path = work_path / "auxiliary"
+    preprocessing = Preprocessing(max_time=args.max_time, time_step=args.time_step, auxiliary_path=auxiliary_path)
+    postprocessing = Postprocessing(auxiliary_path=auxiliary_path)
 
     if args.end_time:
         case_dates = pd.date_range(pd.to_datetime(args.start_time), pd.to_datetime(args.end_time), freq=args.case_freq)
