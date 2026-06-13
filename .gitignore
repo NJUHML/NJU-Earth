@@ -2,3 +2,4 @@
 *.nc
 *.onnx
 *.data
+make_onnx.py
